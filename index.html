@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منيوي - المنيو الديجيتال الذكي لجميع المطاعم</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QRCode.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Cairo Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            500: '#f97316',
+                            600: '#ea580c',
+                            700: '#c2410c',
+                            dark: '#1c1917'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f8fafc;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="text-slate-800 bg-slate-50 min-h-screen flex flex-col justify-between">
+
+    <!-- Top Floating Switch & Multi-Restaurant Bar -->
+    <div class="bg-slate-900 text-white py-2.5 px-4 shadow-md sticky top-0 z-50 border-b border-slate-800">
+        <div class="max-w-4xl mx-auto flex justify-between items-center text-xs sm:text-sm">
+            <div class="flex items-center space-x-2 space-x-reverse font-bold text-amber-400">
+                <i class="fa-solid fa-utensils"></i>
+                <span id="header-restaurant-name">كافيه ووافل جولد</span>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <!-- Manage Restaurants Button -->
+                <button onclick="openRestaurantModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 shadow transition">
+                    <i class="fa-solid fa-store"></i>
+                    <span>المطاعم</span>
+                </button>
+
+                <!-- Switch View Buttons -->
+                <div class="flex items-center space-x-1 space-x-reverse bg-slate-800 p-1 rounded-xl border border-slate-700">
+                    <button id="view-customer-btn" onclick="switchView('customer')" class="px-2.5 py-1 rounded-lg font-bold transition-all bg-brand-500 text-white shadow text-xs">
+                        <i class="fa-solid fa-mobile-screen ml-1"></i> عرض الزبون
+                    </button>
+                    <button id="view-admin-btn" onclick="switchView('admin')" class="px-2.5 py-1 rounded-lg font-bold text-slate-300 hover:text-white transition-all text-xs">
+                        <i class="fa-solid fa-sliders ml-1"></i> لوحة التحكم
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-1">
+
+        <!-- ========================================== -->
+        <!-- 1. CUSTOMER DIGITAL MENU VIEW             -->
+        <!-- ========================================== -->
+        <section id="customer-view" class="max-w-md mx-auto bg-white min-h-screen shadow-xl border-x border-slate-100 pb-28 relative">
+            
+            <!-- Restaurant Header / Banner -->
+            <div class="relative bg-gradient-to-b from-brand-500 to-brand-600 text-white p-6 pt-8 rounded-b-3xl shadow-lg">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <img id="menu-logo" src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=150" alt="Logo" class="w-16 h-16 rounded-2xl object-cover border-2 border-white/80 shadow-md">
+                        <div>
+                            <h1 id="menu-title" class="text-xl font-black leading-tight">كافيه ووافل جولد</h1>
+                            <p id="menu-desc" class="text-xs text-orange-100 mt-1">أشهى أطباق الوافل والمشروبات الطازجة 🍩☕</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Badges -->
+                <div class="flex items-center justify-around bg-white/10 backdrop-blur-md rounded-2xl p-2.5 text-xs text-white border border-white/10 mt-4">
+                    <div class="text-center">
+                        <i class="fa-solid fa-clock text-amber-300 mb-0.5 block text-sm"></i>
+                        <span>10 ص - 12 م</span>
+                    </div>
+                    <div class="w-px h-6 bg-white/20"></div>
+                    <div class="text-center">
+                        <i class="fa-solid fa-motorcycle text-amber-300 mb-0.5 block text-sm"></i>
+                        <span>توصيل سريع</span>
+                    </div>
+                    <div class="w-px h-6 bg-white/20"></div>
+                    <div class="text-center">
+                        <i class="fa-solid fa-star text-amber-300 mb-0.5 block text-sm"></i>
+                        <span>4.9 (450+)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="px-4 -mt-4 relative z-10">
+                <div class="relative shadow-sm rounded-2xl">
+                    <i class="fa-solid fa-magnifying-glass absolute right-4 top-3.5 text-slate-400"></i>
+                    <input type="text" id="search-input" onkeyup="filterMenu()" placeholder="ابحث عن صنفك المفضل..." 
+                        class="w-full pl-4 pr-11 py-3 bg-white border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition">
+                </div>
+            </div>
+
+            <!-- Categories Horizontal Scroll -->
+            <div class="mt-4 px-4">
+                <div class="flex space-x-2 space-x-reverse overflow-x-auto hide-scrollbar py-2" id="categories-bar">
+                    <!-- Dynamic Categories rendering here -->
+                </div>
+            </div>
+
+            <!-- Menu Items List -->
+            <div class="px-4 mt-4 space-y-4" id="menu-items-list">
+                <!-- Dynamic Menu Cards rendering here -->
+            </div>
+
+            <!-- Floating Cart Button -->
+            <div id="cart-bar" class="fixed bottom-4 left-0 right-0 max-w-md mx-auto px-4 z-40 hidden">
+                <button onclick="toggleCartModal(true)" class="w-full bg-slate-900 hover:bg-black text-white p-4 rounded-2xl shadow-2xl flex justify-between items-center transition transform active:scale-95 border border-slate-800">
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <div class="bg-brand-500 text-white w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm shadow" id="cart-count">0</div>
+                        <div class="text-right">
+                            <div class="text-xs text-slate-400">عربة الطلبات</div>
+                            <div class="font-bold text-sm" id="cart-total">0 ج.م</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center text-amber-400 font-bold text-sm">
+                        <span>عرض السلة</span>
+                        <i class="fa-solid fa-chevron-left mr-2 text-xs"></i>
+                    </div>
+                </button>
+            </div>
+
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- 2. ADMIN DASHBOARD VIEW                    -->
+        <!-- ========================================== -->
+        <section id="admin-view" class="max-w-4xl mx-auto px-4 py-8 hidden">
+            
+            <!-- Dashboard Title & Actions -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800">لوحة إدارة المنيو والـ QR Code</h2>
+                    <p class="text-sm text-slate-500 mt-1">قم بتعديل بيانات المطعم الحالي، إضافة أصناف جديدة، وتوليد كود المنيو.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="openItemModal()" class="bg-brand-500 hover:bg-brand-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow transition flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> إضافة صنف جديد
+                    </button>
+                </div>
+            </div>
+
+            <!-- Grid Layout: Controls & Profile / QR -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Right Column: Settings & QR Code Generator -->
+                <div class="space-y-6 lg:col-span-1">
+                    
+                    <!-- QR Code Card -->
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center">
+                        <h3 class="font-bold text-slate-800 mb-1 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-qrcode text-brand-500"></i> الـ QR Code الخاص بالمنيو
+                        </h3>
+                        <p class="text-xs text-slate-500 mb-4">اطبعه وضعه على ترابيزات المطعم ليمسحه الزبون</p>
+                        
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 inline-block mb-4">
+                            <div id="qrcode" class="flex justify-center"></div>
+                        </div>
+
+                        <!-- Direct Restaurant Link for Canva & Printing -->
+                        <div class="mb-4 text-right">
+                            <label class="block text-xs font-bold text-slate-600 mb-1">رابط المنيو المباشر للمتجر:</label>
+                            <div class="flex gap-1">
+                                <input type="text" id="store-direct-link" readonly class="w-full px-2 py-1.5 bg-slate-100 border text-[11px] rounded-lg font-mono text-slate-600" dir="ltr">
+                                <button onclick="copyStoreLink()" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">نسخ</button>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-2">
+                            <button onclick="downloadQR()" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl font-bold text-xs shadow transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-download"></i> تحميل الـ QR كصورة
+                            </button>
+                            <button onclick="printQR()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-print"></i> طباعة كارت الترابيزة
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Restaurant Settings Card -->
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                        <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-store text-brand-500"></i> بيانات المطعم الحالي
+                        </h3>
+                        <form id="restaurant-settings-form" onsubmit="saveRestaurantSettings(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">اسم المطعم / الكافيه</label>
+                                <input type="text" id="setting-name" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">وصف قصير</label>
+                                <input type="text" id="setting-desc" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">رقم الواتساب للطلبات (بالكود الدولي)</label>
+                                <input type="text" id="setting-whatsapp" placeholder="مثال: 201012345678" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500" dir="ltr">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">العملة</label>
+                                <input type="text" id="setting-currency" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">رابط صورة اللوجو</label>
+                                <input type="text" id="setting-logo" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500" dir="ltr">
+                            </div>
+                            <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white py-2.5 rounded-xl font-bold text-xs shadow transition">
+                                حفظ البيانات
+                            </button>
+                        </form>
+                    </div>
+
+                </div>
+
+                <!-- Left Column: Menu Items Management List -->
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="font-bold text-slate-800 text-lg">إدارة أصناف المنيو (<span id="admin-item-count">0</span>)</h3>
+                        </div>
+
+                        <!-- Admin Item Table / List -->
+                        <div class="space-y-3" id="admin-items-list">
+                            <!-- Items will render here dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 mt-auto">
+        منصة المنيو الديجيتال الذكي © 2026 - صُمم لخدمة أصحاب المطاعم والكافيهات
+    </footer>
+
+
+    <!-- ========================================== -->
+    <!-- MODALS SECTION                             -->
+    <!-- ========================================== -->
+
+    <!-- 0. MULTI-RESTAURANT MANAGEMENT MODAL -->
+    <div id="restaurant-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 hidden">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+                    <i class="fa-solid fa-store text-brand-500"></i> قائمة جميع مطاعمك
+                </h3>
+                <button onclick="closeRestaurantModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div id="modal-restaurants-list" class="space-y-2 max-h-60 overflow-y-auto">
+                <!-- List rendered dynamically -->
+            </div>
+
+            <div class="border-t pt-3 space-y-2">
+                <button onclick="createNewRestaurant()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow">
+                    <i class="fa-solid fa-plus"></i> إنشاء مطعم/متجر جديد
+                </button>
+                <div class="flex gap-2 pt-1">
+                    <button onclick="exportData()" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-[11px]">
+                        📥 تصدير نسخة احتياطية
+                    </button>
+                    <label class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-[11px] text-center cursor-pointer">
+                        📤 استرجاع نسخة
+                        <input type="file" onchange="importData(event)" class="hidden" accept=".json">
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 1. CART & CHECKOUT MODAL -->
+    <div id="cart-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-end sm:items-center hidden transition-opacity">
+        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+                    <i class="fa-solid fa-basket-shopping text-brand-500"></i> سلة طلباتك
+                </h3>
+                <button onclick="toggleCartModal(false)" class="text-slate-400 hover:text-slate-600 text-lg p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Cart Items List -->
+            <div id="cart-modal-items" class="space-y-3 max-h-60 overflow-y-auto divide-y divide-slate-100">
+                <!-- Items populated here -->
+            </div>
+
+            <!-- Order Details Form -->
+            <div class="space-y-3 pt-3 border-t border-slate-100">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">نوع الطلب</label>
+                        <select id="order-type" onchange="toggleTableInput()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="داخل المطعم (ترابيزة)">داخل المطعم (ترابيزة)</option>
+                            <option value="توصيل (دليفري)">توصيل (دليفري)</option>
+                            <option value="استلام من الفرع">استلام من الفرع</option>
+                        </select>
+                    </div>
+                    <div id="table-number-container">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">رقم الترابيزة</label>
+                        <input type="text" id="order-table" placeholder="مثال: 5" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">ملاحظات إضافية على الطلب</label>
+                    <input type="text" id="order-notes" placeholder="مثال: إضافات، السكر برة..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                </div>
+
+                <!-- Total summary -->
+                <div class="bg-slate-50 p-3 rounded-2xl flex justify-between items-center text-sm font-bold text-slate-800">
+                    <span>إجمالي المجموع:</span>
+                    <span id="cart-modal-total" class="text-brand-600 text-base">0 ج.م</span>
+                </div>
+
+                <button onclick="sendOrderToWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-600/20 transition flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-lg"></i> إرسال الطلب عبر الواتساب
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 2. ADD/EDIT ITEM MODAL -->
+    <div id="item-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 hidden">
+        <div class="bg-white w-full max-w-lg rounded-3xl p-6 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 id="item-modal-title" class="font-bold text-slate-800 text-lg">إضافة صنف جديد</h3>
+                <button onclick="closeItemModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="item-form" onsubmit="saveItem(event)" class="space-y-4">
+                <input type="hidden" id="item-id">
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">اسم الصنف</label>
+                    <input type="text" id="item-name" required placeholder="مثال: وافل نوتيلا وموز" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">السعر</label>
+                        <input type="number" id="item-price" required placeholder="85" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">القسم</label>
+                        <input type="text" id="item-category" required placeholder="مثال: وافل أو مشروبات" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">وصف الصنف (يفتح النفس)</label>
+                    <textarea id="item-desc" rows="2" placeholder="وصف الصنف والمكونات الشهية..." class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">رابط صورة الصنف (URL)</label>
+                    <input type="text" id="item-image" placeholder="https://images.unsplash.com/..." class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none" dir="ltr">
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="item-available" checked class="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500">
+                    <label for="item-available" class="text-xs font-bold text-slate-700">الصنف متوفر حالياً في المطبخ</label>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" class="flex-1 bg-brand-500 hover:bg-brand-600 text-white py-3 rounded-xl font-bold text-xs shadow transition">
+                        حفظ الصنف
+                    </button>
+                    <button type="button" onclick="closeItemModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-5 py-3 rounded-xl font-bold text-xs transition">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- JAVASCRIPT APP LOGIC                       -->
+    <!-- ========================================== -->
+    <script>
+        // Multi-Restaurant Database Initial Structure
+        const DEFAULT_DATABASE = {
+            activeId: "rest_1",
+            restaurants: [
+                {
+                    id: "rest_1",
+                    name: "كافيه ووافل جولد",
+                    desc: "أشهى أطباق الوافل والمشروبات الطازجة 🍩☕",
+                    whatsapp: "201000000000",
+                    currency: "ج.م",
+                    logo: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=150",
+                    items: [
+                        {
+                            id: "1",
+                            name: "وافل نوتيلا وموز فريش",
+                            price: 85,
+                            category: "وافل",
+                            desc: "وافل ذهبي مقرمش مغرق في شوكولاتة النوتيلا السايحة ومزين بشرائح الموز الطازجة. 🍫🍌",
+                            image: "https://images.unsplash.com/photo-1562376552-0d160a2f238d?w=300",
+                            available: true
+                        },
+                        {
+                            id: "2",
+                            name: "إيس كراميل ماكياتو",
+                            price: 60,
+                            category: "مشروبات باردة",
+                            desc: "إسبريسو غني مع حليب بارد وثلج، ممتزج بصوص الكراميل الكريمي المنعش. ☕✨",
+                            image: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=300",
+                            available: true
+                        },
+                        {
+                            id: "3",
+                            name: "تشيز كيك بالمانجو الفريش",
+                            price: 75,
+                            category: "حلويات",
+                            desc: "طبقات ناعمة من التشيز كيك الغني مغطاة بقطع المانجو الفريش وصوص الفواكه اللذيذ. 🍰🥭",
+                            image: "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=300",
+                            available: true
+                        }
+                    ]
+                }
+            ]
+        };
+
+        // Load DB
+        let db = JSON.parse(localStorage.getItem('multi_qr_menu_db')) || DEFAULT_DATABASE;
+        let cart = [];
+        let activeCategory = "الكل";
+
+        // APP INITIALIZATION
+        window.onload = function() {
+            // Check URL query parameters for direct restaurant link
+            const urlParams = new URLSearchParams(window.location.search);
+            const restParam = urlParams.get('rest_id');
+            if (restParam && db.restaurants.some(r => r.id === restParam)) {
+                db.activeId = restParam;
+            }
+
+            renderAll();
+        };
+
+        function getCurrentRest() {
+            return db.restaurants.find(r => r.id === db.activeId) || db.restaurants[0];
+        }
+
+        function saveData() {
+            localStorage.setItem('multi_qr_menu_db', JSON.stringify(db));
+            renderAll();
+        }
+
+        function renderAll() {
+            renderRestaurantInfo();
+            renderCategoriesBar();
+            renderCustomerMenu();
+            renderAdminItems();
+            generateQRCode();
+        }
+
+        // View Switcher (Customer vs Admin)
+        function switchView(view) {
+            const customerView = document.getElementById('customer-view');
+            const adminView = document.getElementById('admin-view');
+            const custBtn = document.getElementById('view-customer-btn');
+            const adminBtn = document.getElementById('view-admin-btn');
+
+            if (view === 'customer') {
+                customerView.classList.remove('hidden');
+                adminView.classList.add('hidden');
+                custBtn.className = "px-2.5 py-1 rounded-lg font-bold transition-all bg-brand-500 text-white shadow text-xs";
+                adminBtn.className = "px-2.5 py-1 rounded-lg font-bold text-slate-300 hover:text-white transition-all text-xs";
+            } else {
+                customerView.classList.add('hidden');
+                adminView.classList.remove('hidden');
+                adminBtn.className = "px-2.5 py-1 rounded-lg font-bold transition-all bg-brand-500 text-white shadow text-xs";
+                custBtn.className = "px-2.5 py-1 rounded-lg font-bold text-slate-300 hover:text-white transition-all text-xs";
+            }
+        }
+
+        // MULTI-RESTAURANT MANAGEMENT LOGIC
+        function openRestaurantModal() {
+            const listContainer = document.getElementById('modal-restaurants-list');
+            listContainer.innerHTML = '';
+
+            db.restaurants.forEach(r => {
+                const isActive = r.id === db.activeId;
+                listContainer.innerHTML += `
+                    <div class="flex justify-between items-center p-3 border rounded-2xl ${isActive ? 'border-brand-500 bg-brand-50' : 'border-slate-100 bg-slate-50'}">
+                        <div>
+                            <h4 class="font-bold text-xs text-slate-800">${r.name}</h4>
+                            <span class="text-[10px] text-slate-500">${r.items.length} اصناف</span>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="switchActiveRestaurant('${r.id}')" class="px-3 py-1 rounded-xl font-bold text-xs ${isActive ? 'bg-brand-500 text-white' : 'bg-slate-200 text-slate-700'}">
+                                ${isActive ? 'نشط الآن' : 'فتح'}
+                            </button>
+                            ${db.restaurants.length > 1 ? `
+                                <button onclick="deleteRestaurant('${r.id}')" class="px-2 py-1 text-red-500 hover:bg-red-50 rounded-xl text-xs">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('restaurant-modal').classList.remove('hidden');
+        }
+
+        function closeRestaurantModal() {
+            document.getElementById('restaurant-modal').classList.add('hidden');
+        }
+
+        function switchActiveRestaurant(id) {
+            db.activeId = id;
+            saveData();
+            closeRestaurantModal();
+        }
+
+        function createNewRestaurant() {
+            const name = prompt('اكتب اسم المطعم أو الكافيه الجديد:');
+            if (!name) return;
+
+            const newRest = {
+                id: 'rest_' + Date.now(),
+                name: name,
+                desc: 'أشهى الأطباق والمشروبات 🍽️',
+                whatsapp: '201000000000',
+                currency: 'ج.م',
+                logo: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=150',
+                items: []
+            };
+
+            db.restaurants.push(newRest);
+            db.activeId = newRest.id;
+            saveData();
+            closeRestaurantModal();
+        }
+
+        function deleteRestaurant(id) {
+            if (!confirm('هل أنت تأكد من حذف هذا المطعم بجميع أصنافه؟')) return;
+            db.restaurants = db.restaurants.filter(r => r.id !== id);
+            db.activeId = db.restaurants[0].id;
+            saveData();
+            openRestaurantModal();
+        }
+
+        // Render Restaurant Info
+        function renderRestaurantInfo() {
+            const current = getCurrentRest();
+            document.getElementById('header-restaurant-name').innerText = current.name;
+            document.getElementById('menu-title').innerText = current.name;
+            document.getElementById('menu-desc').innerText = current.desc;
+            document.getElementById('menu-logo').src = current.logo;
+
+            // Populate settings form
+            document.getElementById('setting-name').value = current.name;
+            document.getElementById('setting-desc').value = current.desc;
+            document.getElementById('setting-whatsapp').value = current.whatsapp;
+            document.getElementById('setting-currency').value = current.currency;
+            document.getElementById('setting-logo').value = current.logo;
+
+            // Direct Store Link
+            const directLink = window.location.href.split('?')[0] + '?rest_id=' + current.id;
+            document.getElementById('store-direct-link').value = directLink;
+        }
+
+        function copyStoreLink() {
+            const copyText = document.getElementById("store-direct-link");
+            copyText.select();
+            document.execCommand("copy");
+            alert("تم نسخ رابط المتجر المباشر! يمكنك الآن استخدامه في Canva لطباعة الكروت.");
+        }
+
+        function saveRestaurantSettings(e) {
+            e.preventDefault();
+            const current = getCurrentRest();
+            current.name = document.getElementById('setting-name').value;
+            current.desc = document.getElementById('setting-desc').value;
+            current.whatsapp = document.getElementById('setting-whatsapp').value;
+            current.currency = document.getElementById('setting-currency').value;
+            current.logo = document.getElementById('setting-logo').value;
+
+            saveData();
+            alert("تم حفظ بيانات المطعم بنجاح!");
+        }
+
+        // Render Categories Bar
+        function renderCategoriesBar() {
+            const current = getCurrentRest();
+            const categories = ["الكل", ...new Set(current.items.map(item => item.category))];
+            const container = document.getElementById('categories-bar');
+            
+            container.innerHTML = categories.map(cat => `
+                <button onclick="setCategory('${cat}')" 
+                    class="px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition ${activeCategory === cat ? 'bg-brand-500 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                    ${cat}
+                </button>
+            `).join('');
+        }
+
+        function setCategory(cat) {
+            activeCategory = cat;
+            renderCategoriesBar();
+            renderCustomerMenu();
+        }
+
+        function filterMenu() {
+            renderCustomerMenu();
+        }
+
+        // Render Customer Menu
+        function renderCustomerMenu() {
+            const current = getCurrentRest();
+            const container = document.getElementById('menu-items-list');
+            const searchKeyword = document.getElementById('search-input').value.toLowerCase();
+
+            const filteredItems = current.items.filter(item => {
+                const matchesCategory = activeCategory === "الكل" || item.category === activeCategory;
+                const matchesSearch = item.name.toLowerCase().includes(searchKeyword) || item.desc.toLowerCase().includes(searchKeyword);
+                return matchesCategory && matchesSearch;
+            });
+
+            if (filteredItems.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-slate-400">
+                        <i class="fa-solid fa-utensils text-4xl mb-3 opacity-30"></i>
+                        <p class="text-sm font-semibold">لا توجد أصناف تطابق بحثك حالياً.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredItems.map(item => `
+                <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex gap-3 relative overflow-hidden ${!item.available ? 'opacity-60' : ''}">
+                    <img src="${item.image}" alt="${item.name}" class="w-24 h-24 rounded-xl object-cover bg-slate-100 flex-shrink-0" onerror="this.src='https://placehold.co/100?text=Food'">
+                    
+                    <div class="flex-1 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start gap-1">
+                                <h3 class="font-bold text-sm text-slate-800 leading-snug">${item.name}</h3>
+                                ${!item.available ? '<span class="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">غير متوفر</span>' : ''}
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">${item.desc}</p>
+                        </div>
+
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="font-black text-brand-600 text-sm">${item.price} ${current.currency}</span>
+                            
+                            ${item.available ? `
+                                <button onclick="addToCart('${item.id}')" class="bg-brand-50 hover:bg-brand-500 hover:text-white text-brand-600 px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 border border-brand-100">
+                                    <i class="fa-solid fa-plus text-[10px]"></i> إضافة
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // CART LOGIC
+        function addToCart(id) {
+            const current = getCurrentRest();
+            const item = current.items.find(i => i.id === id);
+            if (!item) return;
+
+            const existing = cart.find(c => c.id === id);
+            if (existing) {
+                existing.qty++;
+            } else {
+                cart.push({ ...item, qty: 1 });
+            }
+
+            updateCartUI();
+        }
+
+        function updateCartQty(id, delta) {
+            const item = cart.find(c => c.id === id);
+            if (!item) return;
+
+            item.qty += delta;
+            if (item.qty <= 0) {
+                cart = cart.filter(c => c.id !== id);
+            }
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const current = getCurrentRest();
+            const totalCount = cart.reduce((sum, item) => sum + item.qty, 0);
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+            const cartBar = document.getElementById('cart-bar');
+            document.getElementById('cart-count').innerText = totalCount;
+            document.getElementById('cart-total').innerText = `${totalPrice} ${current.currency}`;
+            document.getElementById('cart-modal-total').innerText = `${totalPrice} ${current.currency}`;
+
+            if (totalCount > 0) {
+                cartBar.classList.remove('hidden');
+            } else {
+                cartBar.classList.add('hidden');
+                toggleCartModal(false);
+            }
+
+            const modalItems = document.getElementById('cart-modal-items');
+            modalItems.innerHTML = cart.map(item => `
+                <div class="flex justify-between items-center pt-2">
+                    <div>
+                        <h4 class="font-bold text-xs text-slate-800">${item.name}</h4>
+                        <div class="text-[11px] text-brand-600 font-bold">${item.price * item.qty} ${current.currency}</div>
+                    </div>
+                    <div class="flex items-center space-x-2 space-x-reverse bg-slate-100 p-1 rounded-xl">
+                        <button onclick="updateCartQty('${item.id}', -1)" class="w-6 h-6 bg-white rounded-lg font-bold text-slate-600 shadow text-xs flex items-center justify-center">-</button>
+                        <span class="text-xs font-bold px-1">${item.qty}</span>
+                        <button onclick="updateCartQty('${item.id}', 1)" class="w-6 h-6 bg-white rounded-lg font-bold text-slate-600 shadow text-xs flex items-center justify-center">+</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleCartModal(show) {
+            const modal = document.getElementById('cart-modal');
+            if (show) modal.classList.remove('hidden');
+            else modal.classList.add('hidden');
+        }
+
+        function toggleTableInput() {
+            const type = document.getElementById('order-type').value;
+            const container = document.getElementById('table-number-container');
+            if (type.includes('ترابيزة')) {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        function sendOrderToWhatsApp() {
+            if (cart.length === 0) return;
+            const current = getCurrentRest();
+
+            const orderType = document.getElementById('order-type').value;
+            const tableNum = document.getElementById('order-table').value;
+            const notes = document.getElementById('order-notes').value;
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+            let message = `🛒 *طلب جديد من المنيو الديجيتال*\n`;
+            message += `------------------------------\n`;
+            message += `📍 *المطعم:* ${current.name}\n`;
+            message += `📍 *نوع الطلب:* ${orderType}\n`;
+            if (orderType.includes('ترابيزة') && tableNum) {
+                message += `🪑 *رقم الترابيزة:* ${tableNum}\n`;
+            }
+            message += `------------------------------\n\n`;
+            message += `📋 *تفاصيل الأصناف:*\n`;
+
+            cart.forEach((item, index) => {
+                message += `${index + 1}. ${item.name} × ${item.qty} = ${item.price * item.qty} ${current.currency}\n`;
+            });
+
+            message += `\n------------------------------\n`;
+            message += `💰 *إجمالي الحساب:* ${totalPrice} ${current.currency}\n`;
+            if (notes) {
+                message += `📝 *ملاحظات:* ${notes}\n`;
+            }
+            message += `------------------------------\n`;
+
+            const encodedMessage = encodeURIComponent(message);
+            window.open(`https://wa.me/${current.whatsapp}?text=${encodedMessage}`, '_blank');
+        }
+
+        // ADMIN MANAGEMENT LOGIC
+        function renderAdminItems() {
+            const current = getCurrentRest();
+            const container = document.getElementById('admin-items-list');
+            document.getElementById('admin-item-count').innerText = current.items.length;
+
+            container.innerHTML = current.items.map(item => `
+                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <img src="${item.image}" class="w-12 h-12 rounded-xl object-cover bg-white" onerror="this.src='https://placehold.co/100?text=Food'">
+                        <div>
+                            <h4 class="font-bold text-xs text-slate-800">${item.name}</h4>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="text-brand-600 font-black text-xs">${item.price} ${current.currency}</span>
+                                <span class="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-bold">${item.category}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-2 space-x-reverse">
+                        <button onclick="toggleAvailability('${item.id}')" class="p-2 rounded-xl text-xs font-bold ${item.available ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">
+                            <i class="fa-solid ${item.available ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                        </button>
+                        <button onclick="editItem('${item.id}')" class="p-2 bg-blue-100 text-blue-600 rounded-xl text-xs font-bold">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button onclick="deleteItem('${item.id}')" class="p-2 bg-rose-100 text-rose-600 rounded-xl text-xs font-bold">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openItemModal(editId = null) {
+            document.getElementById('item-form').reset();
+            document.getElementById('item-id').value = '';
+            document.getElementById('item-modal-title').innerText = "إضافة صنف جديد";
+
+            if (editId) {
+                const current = getCurrentRest();
+                const item = current.items.find(i => i.id === editId);
+                if (item) {
+                    document.getElementById('item-id').value = item.id;
+                    document.getElementById('item-name').value = item.name;
+                    document.getElementById('item-price').value = item.price;
+                    document.getElementById('item-category').value = item.category;
+                    document.getElementById('item-desc').value = item.desc;
+                    document.getElementById('item-image').value = item.image;
+                    document.getElementById('item-available').checked = item.available;
+                    document.getElementById('item-modal-title').innerText = "تعديل الصنف";
+                }
+            }
+
+            document.getElementById('item-modal').classList.remove('hidden');
+        }
+
+        function closeItemModal() {
+            document.getElementById('item-modal').classList.add('hidden');
+        }
+
+        function saveItem(e) {
+            e.preventDefault();
+            const current = getCurrentRest();
+            const id = document.getElementById('item-id').value;
+
+            const newItem = {
+                id: id || Date.now().toString(),
+                name: document.getElementById('item-name').value,
+                price: parseFloat(document.getElementById('item-price').value),
+                category: document.getElementById('item-category').value,
+                desc: document.getElementById('item-desc').value,
+                image: document.getElementById('item-image').value || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300',
+                available: document.getElementById('item-available').checked
+            };
+
+            if (id) {
+                const index = current.items.findIndex(i => i.id === id);
+                current.items[index] = newItem;
+            } else {
+                current.items.push(newItem);
+            }
+
+            saveData();
+            closeItemModal();
+        }
+
+        function editItem(id) {
+            openItemModal(id);
+        }
+
+        function toggleAvailability(id) {
+            const current = getCurrentRest();
+            const item = current.items.find(i => i.id === id);
+            if (item) {
+                item.available = !item.available;
+                saveData();
+            }
+        }
+
+        function deleteItem(id) {
+            if (confirm("هل أنت تأكد من حذف هذا الصنف من المنيو؟")) {
+                const current = getCurrentRest();
+                current.items = current.items.filter(i => i.id !== id);
+                saveData();
+            }
+        }
+
+        // GENERATE QR CODE
+        function generateQRCode() {
+            const qrContainer = document.getElementById("qrcode");
+            qrContainer.innerHTML = "";
+            const current = getCurrentRest();
+            const targetURL = window.location.href.split('?')[0] + '?rest_id=' + current.id;
+
+            new QRCode(qrContainer, {
+                text: targetURL,
+                width: 140,
+                height: 140,
+                colorDark : "#1c1917",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }
+
+        function downloadQR() {
+            const current = getCurrentRest();
+            const img = document.querySelector("#qrcode img");
+            if (img && img.src) {
+                const a = document.createElement("a");
+                a.href = img.src;
+                a.download = `QR_${current.name}.png`;
+                a.click();
+            }
+        }
+
+        function printQR() {
+            const current = getCurrentRest();
+            const img = document.querySelector("#qrcode img");
+            if (!img) return;
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html dir="rtl">
+                <head>
+                    <title>طباعة QR Code المنيو</title>
+                    <style>
+                        body { font-family: 'Cairo', sans-serif; text-align: center; padding: 40px; }
+                        .card { border: 2px dashed #ea580c; padding: 30px; border-radius: 20px; display: inline-block; }
+                        h2 { color: #ea580c; margin-bottom: 5px; }
+                        p { color: #555; font-size: 14px; margin-top: 0; }
+                        img { margin: 20px 0; width: 180px; height: 180px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="card">
+                        <h2>${current.name}</h2>
+                        <p>امسح الـ QR Code بالموبايل لمشاهدة المنيو وإرسال الطلب</p>
+                        <img src="${img.src}" />
+                        <p style="font-weight:bold;">نتمنى لكم وجبة شهية! 🍔☕</p>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        // EXPORT / IMPORT BACKUP
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", "restaurants_backup.json");
+            dlAnchor.click();
+        }
+
+        function importData(event) {
+            const fileReader = new FileReader();
+            fileReader.onload = function(e) {
+                try {
+                    db = JSON.parse(e.target.result);
+                    saveData();
+                    closeRestaurantModal();
+                    alert("تم استرجاع النسخة الاحتياطية بنجاح!");
+                } catch(err) {
+                    alert("الملف غير صالح!");
+                }
+            };
+            fileReader.readAsText(event.target.files[0]);
+        }
+    </script>
+</body>
+</html>
