@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المنيو الديجيتال</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Cairo Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            500: '#f97316',
+                            600: '#ea580c',
+                            700: '#c2410c',
+                            dark: '#1c1917'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f8fafc; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-slate-800 bg-slate-50 min-h-screen flex flex-col justify-between">
+
+    <!-- CUSTOMER DIGITAL MENU VIEW -->
+    <main class="flex-1">
+        <section class="max-w-md mx-auto bg-white min-h-screen shadow-xl border-x border-slate-100 pb-28 relative">
+            
+            <!-- Header Banner -->
+            <div class="relative bg-gradient-to-b from-brand-500 to-brand-600 text-white p-6 pt-8 rounded-b-3xl shadow-lg">
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    <img id="menu-logo" src="" alt="Logo" class="w-16 h-16 rounded-2xl object-cover border-2 border-white/80 shadow-md">
+                    <div>
+                        <h1 id="menu-title" class="text-xl font-black leading-tight">جاري التحميل...</h1>
+                        <p id="menu-desc" class="text-xs text-orange-100 mt-1">...</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-around bg-white/10 backdrop-blur-md rounded-2xl p-2.5 text-xs text-white border border-white/10 mt-4">
+                    <div class="text-center">
+                        <i class="fa-solid fa-clock text-amber-300 mb-0.5 block text-sm"></i>
+                        <span>10 ص - 12 م</span>
+                    </div>
+                    <div class="w-px h-6 bg-white/20"></div>
+                    <div class="text-center">
+                        <i class="fa-solid fa-motorcycle text-amber-300 mb-0.5 block text-sm"></i>
+                        <span>توصيل سريع</span>
+                    </div>
+                    <div class="w-px h-6 bg-white/20"></div>
+                    <div class="text-center">
+                        <i class="fa-solid fa-star text-amber-300 mb-0.5 block text-sm"></i>
+                        <span>4.9 (450+)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="px-4 -mt-4 relative z-10">
+                <div class="relative shadow-sm rounded-2xl">
+                    <i class="fa-solid fa-magnifying-glass absolute right-4 top-3.5 text-slate-400"></i>
+                    <input type="text" id="search-input" onkeyup="renderCustomerMenu()" placeholder="ابحث عن صنفك المفضل..." 
+                        class="w-full pl-4 pr-11 py-3 bg-white border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
+                </div>
+            </div>
+
+            <!-- Categories -->
+            <div class="mt-4 px-4">
+                <div class="flex space-x-2 space-x-reverse overflow-x-auto hide-scrollbar py-2" id="categories-bar"></div>
+            </div>
+
+            <!-- Menu Items -->
+            <div class="px-4 mt-4 space-y-4" id="menu-items-list"></div>
+
+            <!-- Floating Cart Bar -->
+            <div id="cart-bar" class="fixed bottom-4 left-0 right-0 max-w-md mx-auto px-4 z-40 hidden">
+                <button onclick="toggleCartModal(true)" class="w-full bg-slate-900 hover:bg-black text-white p-4 rounded-2xl shadow-2xl flex justify-between items-center transition transform active:scale-95 border border-slate-800">
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <div class="bg-brand-500 text-white w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm shadow" id="cart-count">0</div>
+                        <div class="text-right">
+                            <div class="text-xs text-slate-400">عربة الطلبات</div>
+                            <div class="font-bold text-sm" id="cart-total">0 ج.م</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center text-amber-400 font-bold text-sm">
+                        <span>عرض السلة</span>
+                        <i class="fa-solid fa-chevron-left mr-2 text-xs"></i>
+                    </div>
+                </button>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Cart Modal -->
+    <div id="cart-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-end sm:items-center hidden">
+        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+                    <i class="fa-solid fa-basket-shopping text-brand-500"></i> سلة طلباتك
+                </h3>
+                <button onclick="toggleCartModal(false)" class="text-slate-400 hover:text-slate-600 text-lg p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div id="cart-modal-items" class="space-y-3 max-h-60 overflow-y-auto divide-y divide-slate-100"></div>
+
+            <div class="space-y-3 pt-3 border-t border-slate-100">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">نوع الطلب</label>
+                        <select id="order-type" onchange="toggleTableInput()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none">
+                            <option value="داخل المطعم (ترابيزة)">داخل المطعم (ترابيزة)</option>
+                            <option value="توصيل (دليفري)">توصيل (دليفري)</option>
+                            <option value="استلام من الفرع">استلام من الفرع</option>
+                        </select>
+                    </div>
+                    <div id="table-number-container">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">رقم الترابيزة</label>
+                        <input type="text" id="order-table" placeholder="مثال: 5" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">ملاحظات إضافية على الطلب</label>
+                    <input type="text" id="order-notes" placeholder="مثال: إضافات، السكر برة..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-2xl flex justify-between items-center text-sm font-bold text-slate-800">
+                    <span>إجمالي المجموع:</span>
+                    <span id="cart-modal-total" class="text-brand-600 text-base">0 ج.م</span>
+                </div>
+
+                <button onclick="sendOrderToWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-2xl font-bold text-sm shadow-lg transition flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-lg"></i> إرسال الطلب عبر الواتساب
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DEFAULT_DATABASE = {
+            activeId: "rest_1",
+            restaurants: [{
+                id: "rest_1",
+                name: "كافيه ووافل جولد",
+                desc: "أشهى أطباق الوافل والمشروبات الطازجة 🍩☕",
+                whatsapp: "201000000000",
+                currency: "ج.م",
+                logo: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=150",
+                items: [
+                    { id: "1", name: "وافل نوتيلا وموز فريش", price: 85, category: "وافل", desc: "وافل ذهبي مقرمش مغرق في شوكولاتة النوتيلا السايحة ومزين بشرائح الموز الطازجة. 🍫🍌", image: "https://images.unsplash.com/photo-1562376552-0d160a2f238d?w=300", available: true },
+                    { id: "2", name: "إيس كراميل ماكياتو", price: 60, category: "مشروبات باردة", desc: "إسبريسو غني مع حليب بارد وثلج، ممتزج بصوص الكراميل الكريمي المنعش. ☕✨", image: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=300", available: true },
+                    { id: "3", name: "تشيز كيك بالمانجو الفريش", price: 75, category: "حلويات", desc: "طبقات ناعمة من التشيز كيك الغني مغطاة بقطع المانجو الفريش وصوص الفواكه اللذيذ. 🍰🥭", image: "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=300", available: true },
+                    { id: "4", name: "ميلك شيك فانيليا وأوريو", price: 65, category: "مشروبات باردة", desc: "مزيج كريمي منعش من آيس كريم الفانيليا الفاخر وبسكويت الأوريو المقرمش. 🥤🍪", image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=300", available: true },
+                    { id: "5", name: "فرخة فرخة", price: 55, category: "مشوى", desc: "وجبة مشوية طازجة ولذيذة", image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300", available: true }
+                ]
+            }]
+        };
+
+        let db = JSON.parse(localStorage.getItem('multi_qr_menu_db')) || DEFAULT_DATABASE;
+        let cart = [];
+        let activeCategory = "الكل";
+
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const restParam = urlParams.get('rest_id');
+            if (restParam && db.restaurants.some(r => r.id === restParam)) {
+                db.activeId = restParam;
+            }
+            renderRestaurantInfo();
+            renderCategoriesBar();
+            renderCustomerMenu();
+        };
+
+        function getCurrentRest() {
+            return db.restaurants.find(r => r.id === db.activeId) || db.restaurants[0];
+        }
+
+        function renderRestaurantInfo() {
+            const current = getCurrentRest();
+            document.getElementById('menu-title').innerText = current.name;
+            document.getElementById('menu-desc').innerText = current.desc;
+            document.getElementById('menu-logo').src = current.logo;
+        }
+
+        function renderCategoriesBar() {
+            const current = getCurrentRest();
+            const categories = ["الكل", ...new Set(current.items.map(item => item.category))];
+            const container = document.getElementById('categories-bar');
+            
+            container.innerHTML = categories.map(cat => `
+                <button onclick="setCategory('${cat}')" 
+                    class="px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition ${activeCategory === cat ? 'bg-brand-500 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                    ${cat}
+                </button>
+            `).join('');
+        }
+
+        function setCategory(cat) {
+            activeCategory = cat;
+            renderCategoriesBar();
+            renderCustomerMenu();
+        }
+
+        function renderCustomerMenu() {
+            const current = getCurrentRest();
+            const container = document.getElementById('menu-items-list');
+            const searchKeyword = document.getElementById('search-input').value.toLowerCase();
+
+            const filteredItems = current.items.filter(item => {
+                const matchesCategory = activeCategory === "الكل" || item.category === activeCategory;
+                const matchesSearch = item.name.toLowerCase().includes(searchKeyword) || item.desc.toLowerCase().includes(searchKeyword);
+                return matchesCategory && matchesSearch;
+            });
+
+            if (filteredItems.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-slate-400">
+                        <i class="fa-solid fa-utensils text-4xl mb-3 opacity-30"></i>
+                        <p class="text-sm font-semibold">لا توجد أصناف تطابق بحثك حالياً.</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = filteredItems.map(item => `
+                <div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex gap-3 relative overflow-hidden ${!item.available ? 'opacity-60' : ''}">
+                    <img src="${item.image}" alt="${item.name}" class="w-24 h-24 rounded-xl object-cover bg-slate-100 flex-shrink-0" onerror="this.src='https://placehold.co/100?text=Food'">
+                    
+                    <div class="flex-1 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start gap-1">
+                                <h3 class="font-bold text-sm text-slate-800 leading-snug">${item.name}</h3>
+                                ${!item.available ? '<span class="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">غير متوفر</span>' : ''}
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">${item.desc}</p>
+                        </div>
+
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="font-black text-brand-600 text-sm">${item.price} ${current.currency}</span>
+                            
+                            ${item.available ? `
+                                <button onclick="addToCart('${item.id}')" class="bg-brand-50 hover:bg-brand-500 hover:text-white text-brand-600 px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 border border-brand-100">
+                                    <i class="fa-solid fa-plus text-[10px]"></i> إضافة
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addToCart(id) {
+            const current = getCurrentRest();
+            const item = current.items.find(i => i.id === id);
+            if (!item) return;
+
+            const existing = cart.find(c => c.id === id);
+            if (existing) existing.qty++;
+            else cart.push({ ...item, qty: 1 });
+
+            updateCartUI();
+        }
+
+        function updateCartQty(id, delta) {
+            const item = cart.find(c => c.id === id);
+            if (!item) return;
+
+            item.qty += delta;
+            if (item.qty <= 0) cart = cart.filter(c => c.id !== id);
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const current = getCurrentRest();
+            const totalCount = cart.reduce((sum, item) => sum + item.qty, 0);
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+            const cartBar = document.getElementById('cart-bar');
+            document.getElementById('cart-count').innerText = totalCount;
+            document.getElementById('cart-total').innerText = `${totalPrice} ${current.currency}`;
+            document.getElementById('cart-modal-total').innerText = `${totalPrice} ${current.currency}`;
+
+            if (totalCount > 0) cartBar.classList.remove('hidden');
+            else { cartBar.classList.add('hidden'); toggleCartModal(false); }
+
+            const modalItems = document.getElementById('cart-modal-items');
+            modalItems.innerHTML = cart.map(item => `
+                <div class="flex justify-between items-center pt-2">
+                    <div>
+                        <h4 class="font-bold text-xs text-slate-800">${item.name}</h4>
+                        <div class="text-[11px] text-brand-600 font-bold">${item.price * item.qty} ${current.currency}</div>
+                    </div>
+                    <div class="flex items-center space-x-2 space-x-reverse bg-slate-100 p-1 rounded-xl">
+                        <button onclick="updateCartQty('${item.id}', -1)" class="w-6 h-6 bg-white rounded-lg font-bold text-slate-600 text-xs flex items-center justify-center">-</button>
+                        <span class="text-xs font-bold px-1">${item.qty}</span>
+                        <button onclick="updateCartQty('${item.id}', 1)" class="w-6 h-6 bg-white rounded-lg font-bold text-slate-600 text-xs flex items-center justify-center">+</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleCartModal(show) {
+            document.getElementById('cart-modal').classList.toggle('hidden', !show);
+        }
+
+        function toggleTableInput() {
+            const type = document.getElementById('order-type').value;
+            document.getElementById('table-number-container').classList.toggle('hidden', !type.includes('ترابيزة'));
+        }
+
+        function sendOrderToWhatsApp() {
+            if (cart.length === 0) return;
+            const current = getCurrentRest();
+
+            const orderType = document.getElementById('order-type').value;
+            const tableNum = document.getElementById('order-table').value;
+            const notes = document.getElementById('order-notes').value;
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+            let message = `🛒 *طلب جديد من المنيو الديجيتال*\n------------------------------\n`;
+            message += `📍 *المطعم:* ${current.name}\n📍 *نوع الطلب:* ${orderType}\n`;
+            if (orderType.includes('ترابيزة') && tableNum) message += `🪑 *رقم الترابيزة:* ${tableNum}\n`;
+            message += `------------------------------\n\n📋 *تفاصيل الأصناف:*\n`;
+
+            cart.forEach((item, index) => {
+                message += `${index + 1}. ${item.name} × ${item.qty} = ${item.price * item.qty} ${current.currency}\n`;
+            });
+
+            message += `\n------------------------------\n💰 *إجمالي الحساب:* ${totalPrice} ${current.currency}\n`;
+            if (notes) message += `📝 *ملاحظات:* ${notes}\n`;
+
+            window.open(`https://wa.me/${current.whatsapp}?text=${encodeURIComponent(message)}`, '_blank');
+        }
+    </script>
+</body>
+</html>
