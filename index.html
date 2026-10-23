@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المنيو الديجيتال الذكي السحابي</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QRious Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Cairo Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            500: '#f97316',
+                            600: '#ea580c',
+                            700: '#c2410c',
+                            dark: '#1c1917'
+                        }
+                    },
+                    fontFamily: { sans: ['Cairo', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f8fafc; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @media print {
+            #admin-top-bar, #back-to-admin-bar, .no-print, #cart-bar { display: none !important; }
+            body { background: white !important; }
+            #customer-view { max-width: 100% !important; border: none !important; box-shadow: none !important; display: block !important; }
+            #admin-view { display: none !important; }
+        }
+    </style>
+</head>
+<body class="text-slate-800 bg-slate-50 min-h-screen flex flex-col justify-between">
+
+    <!-- شريط الأدمن العلوي -->
+    <div id="admin-top-bar" class="bg-slate-900 text-white py-2.5 px-4 shadow-md sticky top-0 z-50 border-b border-slate-800 hidden">
+        <div class="max-w-4xl mx-auto flex justify-between items-center text-xs sm:text-sm">
+            <div class="flex items-center space-x-2 space-x-reverse font-bold text-amber-400">
+                <i class="fa-solid fa-utensils"></i>
+                <span id="header-restaurant-name">كافيه ووافل جولد</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="super-admin-btn" onclick="openRestaurantModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 shadow hidden">
+                    <i class="fa-solid fa-store"></i> إدارة المطاعم
+                </button>
+                <button onclick="switchToCustomer()" class="bg-brand-500 hover:bg-brand-600 text-white px-3 py-1.5 rounded-xl font-bold text-xs shadow">
+                    معاينة منيو الزبون
+                </button>
+                <button onclick="logoutAdmin()" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-xl font-bold text-xs shadow">
+                    <i class="fa-solid fa-right-from-bracket"></i> خروج
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <main class="flex-1">
+
+        <!-- واجهة تسجيل الدخول للمالك -->
+        <section id="login-view" class="max-w-md mx-auto my-12 p-6 bg-white rounded-3xl shadow-xl border border-slate-100 hidden">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mx-auto text-2xl mb-2 border border-brand-100">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h2 class="text-xl font-black text-slate-800">تسجيل دخول صاحب المطعم</h2>
+                <p class="text-xs text-slate-500 mt-1">أدخل كلمة المرور المخصصة لمطعمك لإدارة المنيو</p>
+            </div>
+            <form onsubmit="loginAdmin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold mb-1">اختر المطعم</label>
+                    <select id="login-rest-select" class="w-full px-3 py-2.5 bg-slate-50 border rounded-xl text-xs font-semibold"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold mb-1">كلمة المرور</label>
+                    <input type="password" id="login-password" required placeholder="••••••••" class="w-full px-3 py-2.5 border rounded-xl text-xs">
+                </div>
+                <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white py-3 rounded-2xl font-bold text-xs shadow">دخول للوحة التحكم</button>
+            </form>
+        </section>
+
+        <!-- 1. واجهة الزبون -->
+        <section id="customer-view" class="max-w-md mx-auto bg-white min-h-screen shadow-xl border-x border-slate-100 pb-32 relative hidden">
+            <div id="busy-banner" class="bg-rose-600 text-white text-center py-2 px-4 text-xs font-bold hidden">
+                ⚠️ نعتذر، المطعم غير متاح لاستقبال الطلبات حالياً.
+            </div>
+
+            <div class="relative bg-gradient-to-b from-brand-500 to-brand-600 text-white p-6 pt-8 rounded-b-3xl shadow-lg">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <img id="menu-logo" src="" alt="Logo" class="w-16 h-16 rounded-2xl object-cover border-2 border-white/80 shadow-md">
+                        <div>
+                            <h1 id="menu-title" class="text-xl font-black leading-tight">اسم المطعم</h1>
+                            <p id="menu-desc" class="text-xs text-orange-100 mt-1">الوصف</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="back-to-admin-bar" class="px-4 mt-3 hidden">
+                <button onclick="switchToAdmin()" class="w-full bg-slate-900 text-white py-2 rounded-xl text-xs font-bold shadow">
+                    <i class="fa-solid fa-arrow-right ml-1"></i> العودة لوحة التحكم والإدارة
+                </button>
+            </div>
+
+            <div class="px-4 mt-3 flex gap-2 no-print">
+                <button onclick="sendQuickService('طلب الويتر 🔔')" class="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-bell text-amber-500"></i> طلب الويتر
+                </button>
+                <button onclick="sendQuickService('طلب الفاتورة 🧾')" class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-receipt text-blue-500"></i> طلب الفاتورة
+                </button>
+            </div>
+
+            <div class="px-4 mt-3">
+                <div class="bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl p-4 text-white shadow-md flex items-center justify-between relative overflow-hidden">
+                    <div class="relative z-10">
+                        <span class="bg-white/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full backdrop-blur-sm" id="banner-tag">🔥 عرض خاص</span>
+                        <h3 class="font-bold text-sm mt-1" id="banner-title">أهلاً بكم في مطعمنا!</h3>
+                        <p class="text-[11px] text-orange-100 mt-0.5" id="banner-desc">استمتع بألذ الأطباق الطازجة يومياً.</p>
+                    </div>
+                    <div class="text-3xl opacity-20 relative z-10">
+                        <i class="fa-solid fa-bullhorn"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-4 mt-4 relative z-10 no-print">
+                <div class="relative shadow-sm rounded-2xl">
+                    <i class="fa-solid fa-magnifying-glass absolute right-4 top-3.5 text-slate-400"></i>
+                    <input type="text" id="search-input" onkeyup="renderCustomerMenu()" placeholder="ابحث عن صنفك المفضل..." 
+                        class="w-full pl-4 pr-11 py-3 bg-white border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+            </div>
+
+            <div class="mt-4 px-4 no-print">
+                <div class="flex space-x-2 space-x-reverse overflow-x-auto hide-scrollbar py-2" id="categories-bar"></div>
+            </div>
+
+            <div class="px-4 mt-4 space-y-4" id="menu-items-list"></div>
+
+            <div id="cart-bar" class="fixed bottom-4 left-0 right-0 max-w-md mx-auto px-4 z-40 hidden no-print">
+                <button onclick="openCartWithUpsell()" class="w-full bg-slate-900 hover:bg-black text-white p-4 rounded-2xl shadow-2xl flex justify-between items-center transition border border-slate-800">
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <div class="bg-brand-500 text-white w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm shadow" id="cart-count">0</div>
+                        <div class="text-right">
+                            <div class="text-xs text-slate-400">عربة الطلبات</div>
+                            <div class="font-bold text-sm" id="cart-total">0 ج.م</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center text-amber-400 font-bold text-sm">
+                        <span>عرض السلة</span>
+                        <i class="fa-solid fa-chevron-left mr-2 text-xs"></i>
+                    </div>
+                </button>
+            </div>
+        </section>
+
+        <!-- 2. لوحة التحكم وإدارة المطاعم -->
+        <section id="admin-view" class="max-w-4xl mx-auto px-4 py-8 hidden">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800">لوحة إدارة المنيو والـ QR Code</h2>
+                    <p class="text-sm text-slate-500 mt-1">تعديل الأصناف، إعدادات المطعم، والبانر الإعلاني.</p>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button onclick="toggleBusyMode()" id="busy-toggle-btn" class="bg-rose-100 text-rose-700 px-3 py-2 rounded-xl font-bold text-xs shadow">
+                        <i class="fa-solid fa-power-off"></i> وضع المشغول: إيقاف
+                    </button>
+                    <button onclick="printMenuPDF()" class="bg-slate-800 text-white px-3 py-2 rounded-xl font-bold text-xs shadow">
+                        <i class="fa-solid fa-file-pdf"></i> طباعة المنيو PDF
+                    </button>
+                    <button id="super-admin-btn-card" onclick="openRestaurantModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl font-bold text-xs shadow hidden">
+                        <i class="fa-solid fa-store"></i> إدارة المطاعم
+                    </button>
+                    <button onclick="openItemModal()" class="bg-brand-500 hover:bg-brand-600 text-white px-3 py-2 rounded-xl font-bold text-xs shadow flex items-center gap-1">
+                        <i class="fa-solid fa-plus"></i> إضافة صنف
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="space-y-6 lg:col-span-1">
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center">
+                        <h3 class="font-bold text-slate-800 mb-1 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-qrcode text-brand-500"></i> باركود الزبون
+                        </h3>
+                        <p class="text-xs text-slate-500 mb-4">امسحه لفتح منيو الزبون</p>
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 inline-block mb-4">
+                            <canvas id="qr-canvas" class="mx-auto rounded-lg shadow-sm" style="width: 150px; height: 150px;"></canvas>
+                        </div>
+                        <div class="text-right mb-4">
+                            <label class="block text-xs font-bold text-slate-600 mb-1">رابط الزبون المباشر:</label>
+                            <input type="text" id="store-direct-link" readonly class="w-full px-2 py-1.5 bg-slate-100 border text-[11px] rounded-lg font-mono text-slate-600" dir="ltr">
+                        </div>
+                        <button onclick="downloadQR()" class="w-full bg-slate-900 text-white py-2.5 rounded-xl font-bold text-xs shadow">تحميل الـ QR كصورة</button>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-right">
+                        <h3 class="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-pen-to-square text-brand-500"></i> تعديل بيانات المطعم الحالي
+                        </h3>
+                        <form onsubmit="saveCurrentRestData(event)" class="space-y-3">
+                            <div><label class="block text-xs font-bold text-slate-600 mb-1">اسم المطعم</label><input type="text" id="edit-rest-name" class="w-full px-3 py-2 border rounded-xl text-xs" required></div>
+                            <div><label class="block text-xs font-bold text-slate-600 mb-1">الوصف</label><input type="text" id="edit-rest-desc" class="w-full px-3 py-2 border rounded-xl text-xs" required></div>
+                            <div><label class="block text-xs font-bold text-slate-600 mb-1">رقم الواتساب</label><input type="text" id="edit-rest-whatsapp" class="w-full px-3 py-2 border rounded-xl text-xs" dir="ltr" required></div>
+                            <div><label class="block text-xs font-bold text-slate-600 mb-1">كلمة سر لوحة التحكم</label><input type="password" id="edit-rest-password" class="w-full px-3 py-2 border rounded-xl text-xs" required></div>
+                            <div><label class="block text-xs font-bold text-slate-600 mb-1">رابط اللوجو</label><input type="text" id="edit-rest-logo" class="w-full px-3 py-2 border rounded-xl text-xs" dir="ltr"></div>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl text-xs font-bold">حفظ بيانات المطعم</button>
+                        </form>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-right">
+                        <h3 class="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-bullhorn text-brand-500"></i> إعدادات بانر الإعلانات
+                        </h3>
+                        <form onsubmit="saveBannerSettings(event)" class="space-y-3">
+                            <div><label class="block text-xs font-bold text-slate-600 mb-1">عنوان البانر</label><input type="text" id="admin-banner-title" class="w-full px-3 py-2 border rounded-xl text-xs"></div>
+                            <div><label class="block text-xs font-bold text-slate-600 mb-1">وصف العرض</label><input type="text" id="admin-banner-desc" class="w-full px-3 py-2 border rounded-xl text-xs"></div>
+                            <div><label class="block text-xs font-bold text-slate-600 mb-1">الشارة (Tag)</label><input type="text" id="admin-banner-tag" class="w-full px-3 py-2 border rounded-xl text-xs"></div>
+                            <button type="submit" class="w-full bg-slate-900 text-white py-2 rounded-xl text-xs font-bold">حفظ البانر</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                        <h3 class="font-bold text-slate-800 text-lg mb-4">أصناف المنيو الحالية (<span id="admin-item-count">0</span>)</h3>
+                        <div class="space-y-3" id="admin-items-list"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modals -->
+    <div id="upsell-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 hidden">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl text-center space-y-4">
+            <div class="text-3xl text-amber-500"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+            <h3 class="font-bold text-slate-800 text-sm">هل تحب إضافة إحدى هذه الأطباق المميزة مع وجبتك؟</h3>
+            <div id="upsell-dynamic-container" class="grid grid-cols-2 gap-2 text-right"></div>
+            <button onclick="closeUpsellAndOpenCart()" class="w-full bg-slate-900 text-white py-2.5 rounded-xl font-bold text-xs">متابعة إلى السلة</button>
+        </div>
+    </div>
+
+    <div id="restaurant-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 hidden">
+        <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-slate-800 text-lg"><i class="fa-solid fa-store text-brand-500"></i> إدارة مطاعمك</h3>
+                <button onclick="closeRestaurantModal()" class="text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="modal-restaurants-list" class="space-y-2 max-h-40 overflow-y-auto"></div>
+            
+            <div class="border-t pt-3">
+                <h4 class="font-bold text-xs text-slate-700 mb-2">+ إنشاء مطعم جديد بالكامل</h4>
+                <form id="new-restaurant-form" onsubmit="createNewRestaurant(event)" class="space-y-3">
+                    <div><label class="block text-xs font-bold mb-1">اسم المطعم</label><input type="text" id="new-rest-name" required class="w-full px-3 py-2 border rounded-xl text-xs"></div>
+                    <div><label class="block text-xs font-bold mb-1">الوصف القصير</label><input type="text" id="new-rest-desc" required class="w-full px-3 py-2 border rounded-xl text-xs"></div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="block text-xs font-bold mb-1">رقم الواتساب</label><input type="text" id="new-rest-whatsapp" placeholder="2010..." required class="w-full px-3 py-2 border rounded-xl text-xs" dir="ltr"></div>
+                        <div><label class="block text-xs font-bold mb-1">كلمة المرور للوحة</label><input type="password" id="new-rest-password" placeholder="12345" required class="w-full px-3 py-2 border rounded-xl text-xs"></div>
+                    </div>
+                    <div><label class="block text-xs font-bold mb-1">العملة</label><input type="text" id="new-rest-currency" value="ج.م" required class="w-full px-3 py-2 border rounded-xl text-xs"></div>
+                    <div><label class="block text-xs font-bold mb-1">رابط صورة اللوجو (URL)</label><input type="text" id="new-rest-logo" class="w-full px-3 py-2 border rounded-xl text-xs" dir="ltr"></div>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs shadow">إنشاء وحفظ المطعم</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="item-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 hidden">
+        <div class="bg-white w-full max-w-lg rounded-3xl p-6 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 id="item-modal-title" class="font-bold text-slate-800 text-lg">إضافة صنف جديد</h3>
+                <button onclick="closeItemModal()" class="text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="item-form" onsubmit="saveItem(event)" class="space-y-3">
+                <input type="hidden" id="item-id">
+                <div><label class="block text-xs font-bold mb-1">اسم الصنف</label><input type="text" id="item-name" required class="w-full px-3 py-2 border rounded-xl text-xs"></div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div><label class="block text-xs font-bold mb-1">القسم</label><input type="text" id="item-category" required class="w-full px-3 py-2 border rounded-xl text-xs"></div>
+                    <div><label class="block text-xs font-bold mb-1">رابط الصورة (URL)</label><input type="text" id="item-image" class="w-full px-3 py-2 border rounded-xl text-xs" dir="ltr"></div>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-2xl border space-y-2">
+                    <label class="block text-xs font-black text-slate-700">خيارات التسعير والأحجام:</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="block text-[10px] text-slate-500">سعر الحجم الصغير</label><input type="number" id="item-price-small" placeholder="مثال: 50" class="w-full px-3 py-1.5 border rounded-lg text-xs"></div>
+                        <div><label class="block text-[10px] text-slate-500">سعر الحجم الكبير</label><input type="number" id="item-price-large" placeholder="مثال: 80" class="w-full px-3 py-1.5 border rounded-lg text-xs"></div>
+                    </div>
+                    <div><label class="block text-[10px] text-slate-500">أو سعر ثابت (إذا لم توجد أحجام)</label><input type="number" id="item-price-fixed" placeholder="مثال: 65" class="w-full px-3 py-1.5 border rounded-lg text-xs"></div>
+                </div>
+
+                <div class="flex items-center gap-2 bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+                    <input type="checkbox" id="item-best-seller" class="w-4 h-4 text-brand-600 rounded">
+                    <label for="item-best-seller" class="text-xs font-bold text-amber-900">تميز كـ "الأكثر طلباً 🔥" (Best Seller)</label>
+                </div>
+
+                <div><label class="block text-xs font-bold mb-1">الوصف</label><textarea id="item-desc" rows="2" class="w-full px-3 py-2 border rounded-xl text-xs"></textarea></div>
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" class="flex-1 bg-brand-500 text-white py-2.5 rounded-xl font-bold text-xs">حفظ الصنف</button>
+                    <button type="button" onclick="closeItemModal()" class="bg-slate-100 text-slate-600 px-4 py-2.5 rounded-xl font-bold text-xs">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="cart-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-end sm:items-center hidden">
+        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-slate-800 text-lg">سلة طلباتك</h3>
+                <button onclick="toggleCartModal(false)" class="text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="cart-modal-items" class="space-y-3 max-h-40 overflow-y-auto divide-y"></div>
+            
+            <div class="space-y-3 pt-3 border-t">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">نوع الطلب</label>
+                    <select id="order-type" onchange="toggleOrderFields()" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs font-semibold">
+                        <option value="داخل المطعم (ترابيزة)">داخل المطعم (ترابيزة)</option>
+                        <option value="توصيل (دليفري)">توصيل (دليفري)</option>
+                    </select>
+                </div>
+
+                <div id="table-field-container">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">رقم الترابيزة</label>
+                    <input type="text" id="order-table" placeholder="مثال: 5" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs">
+                </div>
+
+                <div id="delivery-fields-container" class="space-y-3 hidden">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">رقم الهاتف للتواصل</label>
+                        <input type="text" id="order-phone" placeholder="مثال: 01012345678" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs" dir="ltr">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">عنوان التوصيل التفصيلي</label>
+                        <textarea id="order-address" rows="2" placeholder="المنطقة، اسم الشارع، رقم العمارة والشقة..." class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs"></textarea>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">ملاحظات على الطلب</label>
+                    <input type="text" id="order-notes" placeholder="مثال: بدون بصل، زيادة صوص..." class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs">
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-2xl flex justify-between items-center text-sm font-bold">
+                    <span>الإجمالي:</span>
+                    <span id="cart-modal-total" class="text-brand-600 text-base">0 ج.م</span>
+                </div>
+                <button onclick="sendOrderToWhatsApp()" class="w-full bg-emerald-600 text-white py-3 rounded-2xl font-bold text-sm shadow flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-lg"></i> إرسال الطلب عبر الواتساب
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // تم تصحيح الرابط هنا بدون /rest/v1/ في النهاية
+        const SUPABASE_URL = "https://hqykcakcjlzllbyzgvun.supabase.co"; 
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxeWtjYWtjamx6bGxieXpndnVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3NTYyNTQsImV4cCI6MjEwODMzMjI1NH0.Xm-NQItb-qQDmoT7WXIIafjIgWZqAvJdcnzP947SqWw"; 
+
+        let supabaseClient = null;
+        if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+
+        const DEFAULT_DATABASE = {
+            activeId: "rest_1",
+            restaurants: [
+                {
+                    id: "rest_1",
+                    name: "كافيه ووافل جولد",
+                    desc: "أشهى أطباق الوافل والمشروبات الطازجة 🍩☕",
+                    whatsapp: "201000000000",
+                    password: "123",
+                    currency: "ج.م",
+                    logo: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=150",
+                    isBusy: false,
+                    banner: { title: "خصم 15% على جميع أصناف الوافل اليوم!", desc: "اطلب الآن واستمتع بالطعم الأصلي.", tag: "🔥 عرض جديد" },
+                    items: [
+                        { id: "1", name: "وافل نوتيلا وموز فريش", price: 85, priceSmall: 70, priceLarge: 95, category: "وافل", desc: "وافل ذهبي مقرمش مع النوتيلا والموز. 🍫🍌", image: "https://images.unsplash.com/photo-1562376552-0d160a2f238d?w=300", available: true, bestSeller: true },
+                        { id: "2", name: "إيس كراميل ماكياتو", price: 60, priceSmall: 50, priceLarge: 70, category: "مشروبات باردة", desc: "إسبريسو غني مع حليب وكراميل. ☕✨", image: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=300", available: true, bestSeller: false }
+                    ]
+                }
+            ]
+        };
+
+        let db = DEFAULT_DATABASE;
+        let cart = [];
+        let selectedSizes = {};
+        let activeCategory = "الكل";
+        let isLoggedIn = false;
+        let isSuperAdmin = false;
+
+        window.onload = async function() {
+            await loadData();
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const restParam = urlParams.get('rest_id');
+            const isCustomer = urlParams.get('mode') === 'customer' || restParam;
+
+            if (restParam && db.restaurants.some(r => r.id === restParam)) {
+                db.activeId = restParam;
+            }
+
+            renderAll();
+
+            if (isCustomer) {
+                document.getElementById('admin-top-bar').classList.add('hidden');
+                document.getElementById('customer-view').classList.remove('hidden');
+                document.getElementById('admin-view').classList.add('hidden');
+                document.getElementById('login-view').classList.add('hidden');
+            } else {
+                if (isLoggedIn) {
+                    showAdminView();
+                } else {
+                    showLoginView();
+                }
+            }
+        };
+
+        async function loadData() {
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient.from('restaurants_db').select('data').eq('id', 'main_config').single();
+                    if (data && data.data) {
+                        db = data.data;
+                        return;
+                    }
+                } catch(e) {}
+            }
+            db = JSON.parse(localStorage.getItem('pro_qr_menu_db_v6')) || DEFAULT_DATABASE;
+        }
+
+        async function saveData() {
+            localStorage.setItem('pro_qr_menu_db_v6', JSON.stringify(db));
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('restaurants_db').upsert({ id: 'main_config', data: db, updated_at: new Date() });
+                } catch(e) {}
+            }
+            renderAll();
+        }
+
+        function showLoginView() {
+            document.getElementById('admin-top-bar').classList.add('hidden');
+            document.getElementById('customer-view').classList.add('hidden');
+            document.getElementById('admin-view').classList.add('hidden');
+            document.getElementById('login-view').classList.remove('hidden');
+
+            const select = document.getElementById('login-rest-select');
+            select.innerHTML = db.restaurants.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+        }
+
+        function showAdminView() {
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('customer-view').classList.add('hidden');
+            document.getElementById('admin-top-bar').classList.remove('hidden');
+            document.getElementById('admin-view').classList.remove('hidden');
+
+            if (isSuperAdmin) {
+                document.getElementById('super-admin-btn').classList.remove('hidden');
+                document.getElementById('super-admin-btn-card').classList.remove('hidden');
+            } else {
+                document.getElementById('super-admin-btn').classList.add('hidden');
+                document.getElementById('super-admin-btn-card').classList.add('hidden');
+            }
+        }
+
+        function loginAdmin(e) {
+            e.preventDefault();
+            const selectedRestId = document.getElementById('login-rest-select').value;
+            const pass = document.getElementById('login-password').value;
+            const rest = db.restaurants.find(r => r.id === selectedRestId);
+
+            if (pass === 'admin123') {
+                db.activeId = selectedRestId;
+                isLoggedIn = true;
+                isSuperAdmin = true;
+                saveData();
+                showAdminView();
+            } else if (rest && rest.password === pass) {
+                db.activeId = selectedRestId;
+                isLoggedIn = true;
+                isSuperAdmin = false;
+                saveData();
+                showAdminView();
+            } else {
+                alert("كلمة المرور غير صحيحة!");
+            }
+        }
+
+        function logoutAdmin() {
+            isLoggedIn = false;
+            isSuperAdmin = false;
+            showLoginView();
+        }
+
+        function getCurrentRest() {
+            return db.restaurants.find(r => r.id === db.activeId) || db.restaurants[0];
+        }
+
+        function renderAll() {
+            const current = getCurrentRest();
+            document.getElementById('header-restaurant-name').innerText = current.name;
+            document.getElementById('menu-title').innerText = current.name;
+            document.getElementById('menu-desc').innerText = current.desc;
+            document.getElementById('menu-logo').src = current.logo;
+
+            document.getElementById('busy-banner').classList.toggle('hidden', !current.isBusy);
+            const busyBtn = document.getElementById('busy-toggle-btn');
+            if (current.isBusy) {
+                busyBtn.className = "bg-rose-600 text-white px-3 py-2 rounded-xl font-bold text-xs shadow";
+                busyBtn.innerHTML = `<i class="fa-solid fa-power-off"></i> وضع المشغول: مُمكّن`;
+            } else {
+                busyBtn.className = "bg-rose-100 text-rose-700 px-3 py-2 rounded-xl font-bold text-xs shadow";
+                busyBtn.innerHTML = `<i class="fa-solid fa-power-off"></i> وضع المشغول: إيقاف`;
+            }
+
+            document.getElementById('edit-rest-name').value = current.name;
+            document.getElementById('edit-rest-desc').value = current.desc;
+            document.getElementById('edit-rest-whatsapp').value = current.whatsapp;
+            document.getElementById('edit-rest-password').value = current.password || '123';
+            document.getElementById('edit-rest-logo').value = current.logo;
+
+            if(current.banner) {
+                document.getElementById('banner-title').innerText = current.banner.title;
+                document.getElementById('banner-desc').innerText = current.banner.desc;
+                document.getElementById('banner-tag').innerText = current.banner.tag;
+                document.getElementById('admin-banner-title').value = current.banner.title;
+                document.getElementById('admin-banner-desc').value = current.banner.desc;
+                document.getElementById('admin-banner-tag').value = current.banner.tag;
+            }
+
+            const customerUrl = window.location.href.split('?')[0] + '?rest_id=' + current.id + '&mode=customer';
+            document.getElementById('store-direct-link').value = customerUrl;
+            
+            try {
+                new QRious({ element: document.getElementById('qr-canvas'), value: customerUrl, size: 180 });
+            } catch(e) {}
+
+            renderCategories();
+            renderCustomerMenu();
+            renderAdminItems();
+        }
+
+        function toggleBusyMode() {
+            const current = getCurrentRest();
+            current.isBusy = !current.isBusy;
+            saveData();
+        }
+
+        function printMenuPDF() {
+            document.getElementById('admin-top-bar').classList.add('hidden');
+            document.getElementById('admin-view').classList.add('hidden');
+            document.getElementById('customer-view').classList.remove('hidden');
+            setTimeout(() => { window.print(); }, 300);
+        }
+
+        function saveCurrentRestData(e) {
+            e.preventDefault();
+            const current = getCurrentRest();
+            current.name = document.getElementById('edit-rest-name').value;
+            current.desc = document.getElementById('edit-rest-desc').value;
+            current.whatsapp = document.getElementById('edit-rest-whatsapp').value;
+            current.password = document.getElementById('edit-rest-password').value;
+            current.logo = document.getElementById('edit-rest-logo').value || 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=150';
+            saveData();
+            alert("تم حفظ بيانات المطعم وكلمة المرور سحابياً بنجاح!");
+        }
+
+        function switchToCustomer() {
+            const current = getCurrentRest();
+            window.location.href = `?rest_id=${current.id}&mode=customer`;
+        }
+
+        function switchToAdmin() {
+            window.location.href = window.location.href.split('?')[0];
+        }
+
+        function openRestaurantModal() {
+            if (!isSuperAdmin) return;
+            const listContainer = document.getElementById('modal-restaurants-list');
+            listContainer.innerHTML = db.restaurants.map(r => `
+                <div class="flex justify-between items-center p-3 border rounded-xl ${r.id === db.activeId ? 'border-brand-500 bg-brand-50' : 'bg-slate-50'}">
+                    <div>
+                        <h4 class="font-bold text-xs text-slate-800">${r.name}</h4>
+                        <span class="text-[10px] text-slate-500">${r.items.length} صنف</span>
+                    </div>
+                    <button onclick="switchActiveRestaurant('${r.id}')" class="px-3 py-1 rounded-xl font-bold text-xs ${r.id === db.activeId ? 'bg-brand-500 text-white' : 'bg-slate-200 text-slate-700'}">
+                        ${r.id === db.activeId ? 'نشط' : 'اختيار'}
+                    </button>
+                </div>
+            `).join('');
+            document.getElementById('restaurant-modal').classList.remove('hidden');
+        }
+
+        function closeRestaurantModal() { document.getElementById('restaurant-modal').classList.add('hidden'); }
+
+        function switchActiveRestaurant(id) {
+            db.activeId = id;
+            saveData();
+            closeRestaurantModal();
+        }
+
+        function createNewRestaurant(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-rest-name').value;
+            const desc = document.getElementById('new-rest-desc').value;
+            const whatsapp = document.getElementById('new-rest-whatsapp').value;
+            const password = document.getElementById('new-rest-password').value;
+            const currency = document.getElementById('new-rest-currency').value;
+            const logo = document.getElementById('new-rest-logo').value || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=150';
+
+            const newRest = {
+                id: 'rest_' + Date.now(),
+                name: name,
+                desc: desc,
+                whatsapp: whatsapp,
+                password: password,
+                currency: currency,
+                logo: logo,
+                isBusy: false,
+                banner: { title: "أهلاً بكم في مطعمنا الجديد!", desc: "تفضلوا باكتشاف أطعم المأكولات.", tag: "✨ افتتاح" },
+                items: []
+            };
+            db.restaurants.push(newRest);
+            db.activeId = newRest.id;
+            saveData();
+            document.getElementById('new-restaurant-form').reset();
+            openRestaurantModal();
+        }
+
+        function saveBannerSettings(e) {
+            e.preventDefault();
+            const current = getCurrentRest();
+            current.banner = {
+                title: document.getElementById('admin-banner-title').value,
+                desc: document.getElementById('admin-banner-desc').value,
+                tag: document.getElementById('admin-banner-tag').value
+            };
+            saveData();
+            alert("تم تحديث البانر الإعلاني سحابياً بنجاح!");
+        }
+
+        function renderCategories() {
+            const current = getCurrentRest();
+            const categories = ["الكل", ...new Set(current.items.map(i => i.category))];
+            document.getElementById('categories-bar').innerHTML = categories.map(cat => `
+                <button onclick="setCategory('${cat}')" class="px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition ${activeCategory === cat ? 'bg-brand-500 text-white shadow' : 'bg-slate-100 text-slate-600'}">${cat}</button>
+            `).join('');
+        }
+
+        function setCategory(cat) {
+            activeCategory = cat;
+            renderCategories();
+            renderCustomerMenu();
+        }
+
+        function selectItemSize(itemId, sizeName, priceVal) {
+            selectedSizes[itemId] = { sizeName, priceVal };
+            renderCustomerMenu();
+        }
+
+        function renderCustomerMenu() {
+            const current = getCurrentRest();
+            const keyword = document.getElementById('search-input').value.toLowerCase();
+            const filtered = current.items.filter(i => (activeCategory === "الكل" || i.category === activeCategory) && (i.name.toLowerCase().includes(keyword) || i.desc.toLowerCase().includes(keyword)));
+            
+            document.getElementById('menu-items-list').innerHTML = filtered.length === 0 ? `<div class="text-center py-10 text-slate-400 text-xs">لا توجد أصناف مطابقة</div>` : filtered.map(item => {
+                const hasSizes = item.priceSmall || item.priceLarge;
+                
+                if (hasSizes && !selectedSizes[item.id]) {
+                    selectedSizes[item.id] = item.priceSmall ? { sizeName: 'صغير', priceVal: item.priceSmall } : { sizeName: 'كبير', priceVal: item.priceLarge };
+                }
+
+                const currentSel = selectedSizes[item.id] || { sizeName: 'عادي', priceVal: item.price };
+                
+                let sizeOptionsHtml = '';
+                if (hasSizes) {
+                    sizeOptionsHtml = `<div class="flex gap-1.5 my-2">`;
+                    if (item.priceSmall) {
+                        const isSelected = currentSel.sizeName === 'صغير';
+                        sizeOptionsHtml += `<button onclick="selectItemSize('${item.id}', 'صغير', ${item.priceSmall})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isSelected ? 'bg-brand-500 text-white border-brand-500 shadow' : 'bg-slate-100 text-slate-600 border-slate-200'}">صغير (${item.priceSmall} ${current.currency})</button>`;
+                    }
+                    if (item.priceLarge) {
+                        const isSelected = currentSel.sizeName === 'كبير';
+                        sizeOptionsHtml += `<button onclick="selectItemSize('${item.id}', 'كبير', ${item.priceLarge})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${isSelected ? 'bg-brand-500 text-white border-brand-500 shadow' : 'bg-slate-100 text-slate-600 border-slate-200'}">كبير (${item.priceLarge} ${current.currency})</button>`;
+                    }
+                    sizeOptionsHtml += `</div>`;
+                }
+
+                const canOrder = item.available && !current.isBusy;
+
+                const actionButton = canOrder ? 
+                    `<button onclick="addSelectedItemToCart('${item.id}')" class="bg-brand-50 hover:bg-brand-500 hover:text-white text-brand-600 px-3 py-1.5 rounded-xl font-bold text-xs border border-brand-100 transition flex items-center gap-1">
+                        <i class="fa-solid fa-plus text-[10px]"></i> إضافة للسلة
+                    </button>` : 
+                    `<button disabled class="bg-slate-100 text-slate-400 px-3 py-1.5 rounded-xl font-bold text-xs cursor-not-allowed">
+                        غير متوفر
+                    </button>`;
+
+                return `
+                <div class="bg-white rounded-2xl p-3 border shadow-sm flex gap-3 items-center ${!canOrder ? 'opacity-60' : ''}">
+                    <img src="${item.image}" class="w-20 h-20 rounded-xl object-cover" onerror="this.src='https://placehold.co/100?text=Food'">
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-sm">${item.name}</h3>
+                            <div class="flex gap-1">
+                                ${item.bestSeller ? '<span class="bg-amber-100 text-amber-700 text-[9px] font-bold px-2 py-0.5 rounded-full">🔥 الأكثر طلباً</span>' : ''}
+                                ${!item.available ? '<span class="bg-red-100 text-red-600 text-[9px] font-bold px-2 py-0.5 rounded-full">غير متاح</span>' : ''}
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-0.5 line-clamp-1">${item.desc}</p>
+                        ${sizeOptionsHtml}
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="font-black text-brand-600 text-sm">${hasSizes ? currentSel.priceVal : item.price} ${current.currency}</span>
+                            ${actionButton}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function addSelectedItemToCart(id) {
+            const current = getCurrentRest();
+            const item = current.items.find(i => i.id === id);
+            if (!item || !item.available || current.isBusy) return;
+
+            const sel = selectedSizes[id] || { sizeName: 'عادي', priceVal: item.price };
+            const cartKey = `${id}_${sel.sizeName}`;
+            const exist = cart.find(c => c.cartKey === cartKey);
+
+            if (exist) {
+                exist.qty++;
+            } else {
+                cart.push({ ...item, cartKey, selectedSize: sel.sizeName, finalPrice: sel.priceVal, qty: 1 });
+            }
+            updateCartUI();
+        }
+
+        function sendQuickService(serviceType) {
+            const current = getCurrentRest();
+            const tableNum = prompt(`اكتب رقم ترابيزتك لـ ${serviceType}:`);
+            if(!tableNum) return;
+
+            let msg = `🔔 *طلب خدمة سريعة من الترابيزة*\n📍 *المطعم:* ${current.name}\n📍 *الخدمة:* ${serviceType}\n🪑 *رقم الترابيزة:* ${tableNum}`;
+            window.open(`https://wa.me/${current.whatsapp}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function renderAdminItems() {
+            const current = getCurrentRest();
+            document.getElementById('admin-item-count').innerText = current.items.length;
+            document.getElementById('admin-items-list').innerHTML = current.items.map(item => `
+                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border">
+                    <div class="flex items-center gap-3">
+                        <img src="${item.image}" class="w-12 h-12 rounded-xl object-cover" onerror="this.src='https://placehold.co/100?text=Food'">
+                        <div>
+                            <div class="flex items-center gap-1">
+                                <h4 class="font-bold text-xs">${item.name}</h4>
+                                ${item.bestSeller ? '<span class="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">🔥</span>' : ''}
+                            </div>
+                            <span class="text-brand-600 font-black text-xs">${item.priceSmall ? item.priceSmall + ' - ' + item.priceLarge : item.price} ${current.currency}</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-1">
+                        <button onclick="toggleAvailability('${item.id}')" class="p-2 rounded-xl text-xs ${item.available ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}"><i class="fa-solid ${item.available ? 'fa-eye' : 'fa-eye-slash'}"></i></button>
+                        <button onclick="openItemModal('${item.id}')" class="p-2 bg-blue-100 text-blue-600 rounded-xl text-xs"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteItem('${item.id}')" class="p-2 bg-rose-100 text-rose-600 rounded-xl text-xs"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openItemModal(id = null) {
+            document.getElementById('item-form').reset();
+            document.getElementById('item-id').value = '';
+            document.getElementById('item-modal-title').innerText = "إضافة صنف جديد";
+            if(id) {
+                const current = getCurrentRest();
+                const item = current.items.find(i => i.id === id);
+                if(item) {
+                    document.getElementById('item-id').value = item.id;
+                    document.getElementById('item-name').value = item.name;
+                    document.getElementById('item-category').value = item.category;
+                    document.getElementById('item-desc').value = item.desc;
+                    document.getElementById('item-image').value = item.image;
+                    document.getElementById('item-best-seller').checked = item.bestSeller || false;
+                    document.getElementById('item-price-fixed').value = item.price || '';
+                    document.getElementById('item-price-small').value = item.priceSmall || '';
+                    document.getElementById('item-price-large').value = item.priceLarge || '';
+                    document.getElementById('item-modal-title').innerText = "تعديل الصنف";
+                }
+            }
+            document.getElementById('item-modal').classList.remove('hidden');
+        }
+
+        function closeItemModal() { document.getElementById('item-modal').classList.add('hidden'); }
+
+        function saveItem(e) {
+            e.preventDefault();
+            const current = getCurrentRest();
+            const id = document.getElementById('item-id').value;
+            const fixedPrice = parseFloat(document.getElementById('item-price-fixed').value) || 0;
+            const smallPrice = parseFloat(document.getElementById('item-price-small').value) || 0;
+            const largePrice = parseFloat(document.getElementById('item-price-large').value) || 0;
+
+            const newItem = {
+                id: id || Date.now().toString(),
+                name: document.getElementById('item-name').value,
+                price: fixedPrice || smallPrice || 0,
+                priceSmall: smallPrice,
+                priceLarge: largePrice,
+                category: document.getElementById('item-category').value,
+                desc: document.getElementById('item-desc').value,
+                image: document.getElementById('item-image').value || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300',
+                bestSeller: document.getElementById('item-best-seller').checked,
+                available: true
+            };
+            if(id) {
+                const idx = current.items.findIndex(i => i.id === id);
+                newItem.available = current.items[idx].available;
+                current.items[idx] = newItem;
+            } else {
+                current.items.push(newItem);
+            }
+            saveData();
+            closeItemModal();
+        }
+
+        function deleteItem(id) {
+            if(confirm("هل أنت متأكد من الحذف؟")) {
+                const current = getCurrentRest();
+                current.items = current.items.filter(i => i.id !== id);
+                saveData();
+            }
+        }
+
+        function toggleAvailability(id) {
+            const current = getCurrentRest();
+            const item = current.items.find(i => i.id === id);
+            if(item) { 
+                item.available = !item.available; 
+                saveData(); 
+            }
+        }
+
+        function openCartWithUpsell() {
+            const current = getCurrentRest();
+            const availableItems = current.items.filter(i => i.available && !cart.some(c => c.id === i.id));
+            
+            if (availableItems.length === 0) {
+                toggleCartModal(true);
+                return;
+            }
+
+            const upsellContainer = document.getElementById('upsell-dynamic-container');
+            const suggested = availableItems.slice(0, 2);
+
+            upsellContainer.innerHTML = suggested.map(item => `
+                <button onclick="addUpsellDynamicItem('${item.id}')" class="p-3 border rounded-2xl bg-brand-50 border-brand-200 hover:bg-brand-100 transition text-right">
+                    <div class="font-bold text-xs text-brand-900 line-clamp-1">${item.name}</div>
+                    <div class="text-[11px] text-brand-600 font-black mt-1">+${item.priceSmall || item.price} ${current.currency}</div>
+                </button>
+            `).join('');
+
+            document.getElementById('upsell-modal').classList.remove('hidden');
+        }
+
+        function closeUpsellAndOpenCart() {
+            document.getElementById('upsell-modal').classList.add('hidden');
+            toggleCartModal(true);
+        }
+
+        function addUpsellDynamicItem(itemId) {
+            addSelectedItemToCart(itemId);
+            closeUpsellAndOpenCart();
+        }
+
+        function updateCartQty(cartKey, delta) {
+            const item = cart.find(c => c.cartKey === cartKey);
+            if(item) {
+                item.qty += delta;
+                if(item.qty <= 0) cart = cart.filter(c => c.cartKey !== cartKey);
+            }
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const current = getCurrentRest();
+            const count = cart.reduce((sum, i) => sum + i.qty, 0);
+            const total = cart.reduce((sum, i) => sum + (i.finalPrice * i.qty), 0);
+            document.getElementById('cart-count').innerText = count;
+            document.getElementById('cart-total').innerText = `${total} ${current.currency}`;
+            document.getElementById('cart-modal-total').innerText = `${total} ${current.currency}`;
+            document.getElementById('cart-bar').classList.toggle('hidden', count === 0);
+            
+            document.getElementById('cart-modal-items').innerHTML = cart.map(i => `
+                <div class="flex justify-between items-center py-2">
+                    <div>
+                        <h4 class="font-bold text-xs">${i.name} (${i.selectedSize})</h4>
+                        <span class="text-xs text-brand-600 font-bold">${i.finalPrice * i.qty} ${current.currency}</span>
+                    </div>
+                    <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+                        <button onclick="updateCartQty('${i.cartKey}', -1)" class="w-6 h-6 bg-white rounded-lg font-bold text-xs">-</button>
+                        <span class="text-xs font-bold px-1">${i.qty}</span>
+                        <button onclick="updateCartQty('${i.cartKey}', 1)" class="w-6 h-6 bg-white rounded-lg font-bold text-xs">+</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleCartModal(show) { document.getElementById('cart-modal').classList.toggle('hidden', !show); }
+
+        function toggleOrderFields() {
+            const type = document.getElementById('order-type').value;
+            const isDelivery = type.includes('دليفري');
+            document.getElementById('delivery-fields-container').classList.toggle('hidden', !isDelivery);
+            document.getElementById('table-field-container').classList.toggle('hidden', isDelivery);
+        }
+
+        function sendOrderToWhatsApp() {
+            if(cart.length === 0) return;
+            const current = getCurrentRest();
+            const type = document.getElementById('order-type').value;
+            const isDelivery = type.includes('دليفري');
+            const table = document.getElementById('order-table').value;
+            const phone = document.getElementById('order-phone').value;
+            const address = document.getElementById('order-address').value;
+            const notes = document.getElementById('order-notes').value;
+            const total = cart.reduce((sum, i) => sum + (i.finalPrice * i.qty), 0);
+
+            let msg = `🛒 *طلب جديد من المنيو الديجيتال*\n📍 *المطعم:* ${current.name}\n📍 *نوع الطلب:* ${type}\n`;
+            
+            if (isDelivery) {
+                if(phone) msg += `📞 *رقم الهاتف:* ${phone}\n`;
+                if(address) msg += `🏠 *العنوان:* ${address}\n`;
+            } else {
+                if(table) msg += `🪑 *رقم الترابيزة:* ${table}\n`;
+            }
+
+            if(notes) msg += `📝 *ملاحظات:* ${notes}\n`;
+            msg += `-------------------\n`;
+            cart.forEach((i, idx) => msg += `${idx+1}. ${i.name} [${i.selectedSize}] × ${i.qty} = ${i.finalPrice * i.qty} ${current.currency}\n`);
+            msg += `-------------------\n💰 *الإجمالي الكلي:* ${total} ${current.currency}`;
+
+            window.open(`https://wa.me/${current.whatsapp}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function downloadQR() {
+            const canvas = document.getElementById("qr-canvas");
+            const a = document.createElement("a");
+            a.href = canvas.toDataURL("image/png");
+            a.download = `QR_Menu.png`;
+            a.click();
+        }
+    </script>
+</body>
+</html>
